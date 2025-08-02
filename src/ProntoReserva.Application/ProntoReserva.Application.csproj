@@ -10,4 +10,8 @@
     <ProjectReference Include="..\ProntoReserva.Domain\ProntoReserva.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Reservas\Commands\ConfirmarReserva\" />
+  </ItemGroup>
+
 </Project>
