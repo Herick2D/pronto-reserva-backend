@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ProntoReserva.Application.Features.Reservas.Commands.ConfirmarReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.CreateReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.DeleteReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.UpdateReserva;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<CreateReservaCommandHandler>();
         services.AddScoped<UpdateReservaCommandHandler>();
         services.AddScoped<DeleteReservaCommandHandler>();
+        services.AddScoped<ConfirmarReservaCommandHandler>();
         
         services.AddScoped<GetReservaByIdQueryHandler>();
         services.AddScoped<GetAllReservasQueryHandler>();
