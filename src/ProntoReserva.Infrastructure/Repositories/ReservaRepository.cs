@@ -23,13 +23,30 @@ public class ReservaRepository : IReservaRepository
         using var connection = CreateConnection();
         return await connection.QuerySingleOrDefaultAsync<Reserva>(sql, new { Id = id });
     }
-
-    public async Task<ICollection<Reserva>> GetAllAsync()
+    
+    public async Task<(ICollection<Reserva> Reservas, int TotalCount)> GetAllAsync(int pageNumber, int pageSize)
     {
-        const string sql = "SELECT * FROM Reservas";
+        const string sql = @"
+            SELECT COUNT(*) FROM Reservas;
+
+            SELECT * FROM Reservas
+            ORDER BY DataReserva DESC
+            OFFSET @Offset ROWS
+            FETCH NEXT @PageSize ROWS ONLY;
+        ";
+
         using var connection = CreateConnection();
-        var reservas = await connection.QueryAsync<Reserva>(sql);
-        return reservas.ToList();
+        
+        using var multi = await connection.QueryMultipleAsync(sql, new
+        {
+            Offset = (pageNumber - 1) * pageSize,
+            PageSize = pageSize
+        });
+        
+        var totalCount = await multi.ReadSingleAsync<int>();
+        var reservas = (await multi.ReadAsync<Reserva>()).ToList();
+
+        return (reservas, totalCount);
     }
 
     public async Task AddAsync(Reserva reserva)
