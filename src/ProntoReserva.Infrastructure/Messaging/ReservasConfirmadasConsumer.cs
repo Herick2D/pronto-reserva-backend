@@ -24,7 +24,6 @@ public class ReservasConfirmadasConsumer : BackgroundService
         var factory = new ConnectionFactory() { HostName = "localhost" };
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
-
         _channel.QueueDeclare(queue: QueueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
     }
 
@@ -40,11 +39,17 @@ public class ReservasConfirmadasConsumer : BackgroundService
             {
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
-                _logger.LogInformation("--> [RabbitMQ] Recebida mensagem: {Message}", message);
-
                 var evento = JsonSerializer.Deserialize<ReservaConfirmadaEvent>(message);
 
-                _logger.LogInformation("--> Processando evento de reserva confirmada para o ID: {ReservaId}", evento.ReservaId);
+                // A partir daqui, processamos o evento.
+                // Para este caso, envio de uma notificação de confirmação para o cliente.
+                _logger.LogInformation("--> [CONSUMIDOR] Evento de confirmação recebido para a Reserva ID: {ReservaId}", evento.ReservaId);
+                _logger.LogInformation("--> Simulando envio de e-mail...");
+
+                // Simula a latência de um serviço externo (ex: serviço de e-mail).
+                Thread.Sleep(3000);
+
+                _logger.LogInformation("--> Notificação para a Reserva ID: {ReservaId} processada com sucesso.", evento.ReservaId);
 
                 _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
             }
@@ -56,7 +61,6 @@ public class ReservasConfirmadasConsumer : BackgroundService
 
         _channel.BasicConsume(queue: QueueName, autoAck: false, consumer: consumer);
         _logger.LogInformation("--> [RabbitMQ] Consumidor iniciado. A aguardar por mensagens...");
-
         return Task.CompletedTask;
     }
 
