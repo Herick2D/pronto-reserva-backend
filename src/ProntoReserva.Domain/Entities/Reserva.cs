@@ -21,25 +21,38 @@ public class Reserva : Entity
     }
     
     private Reserva() { }
+    
+    private static DateTime GetBrazilTimeNow()
+    {
+        var brazilTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
+        return TimeZoneInfo.ConvertTime(DateTime.UtcNow, brazilTimeZone);
+    }
+    
+    private static DateTime NormalizeToUtc(DateTime dt)
+    {
+        return dt.Kind switch
+        {
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
+            DateTimeKind.Local => dt.ToUniversalTime(),
+            _ => dt
+        };
+    }
 
     public static Reserva Criar(string nomeCliente, DateTime dataReserva, int numeroPessoas)
     {
-        if (string.IsNullOrWhiteSpace(nomeCliente))
-        {
-            throw new ArgumentException("O nome do cliente não pode ser vazio.", nameof(nomeCliente));
-        }
+        var dataReservaUtc = NormalizeToUtc(dataReserva);
+        var agoraNoBrasil = GetBrazilTimeNow();
 
-        if (dataReserva < DateTime.UtcNow)
-        {
+        if (string.IsNullOrWhiteSpace(nomeCliente))
+            throw new ArgumentException("O nome do cliente não pode ser vazio.", nameof(nomeCliente));
+
+        if (dataReservaUtc < agoraNoBrasil)
             throw new ArgumentException("A data da reserva não pode ser no passado.", nameof(dataReserva));
-        }
 
         if (numeroPessoas <= 0)
-        {
             throw new ArgumentException("O número de pessoas deve ser maior que zero.", nameof(numeroPessoas));
-        }
 
-        return new Reserva(Guid.NewGuid(), nomeCliente, dataReserva, numeroPessoas);
+        return new Reserva(Guid.NewGuid(), nomeCliente, dataReservaUtc, numeroPessoas);
     }
     
     public void Confirmar()
@@ -68,28 +81,26 @@ public class Reserva : Entity
     //TODO: transformar as validações em uma função para evitar boilerplate
     public void Atualizar(string nomeCliente, DateTime dataReserva, int numeroPessoas)
     {
-        if (string.IsNullOrWhiteSpace(nomeCliente))
-        {
-            throw new ArgumentException("O nome do cliente não pode ser vazio.", nameof(nomeCliente));
-        }
+        var dataReservaUtc = NormalizeToUtc(dataReserva);
+        var agoraNoBrasil = GetBrazilTimeNow();
 
-        if (dataReserva < DateTime.UtcNow)
-        {
+        if (string.IsNullOrWhiteSpace(nomeCliente))
+            throw new ArgumentException("O nome do cliente não pode ser vazio.", nameof(nomeCliente));
+
+        if (dataReservaUtc < agoraNoBrasil)
             throw new ArgumentException("A data da reserva não pode ser no passado.", nameof(dataReserva));
-        }
 
         if (numeroPessoas <= 0)
-        {
             throw new ArgumentException("O número de pessoas deve ser maior que zero.", nameof(numeroPessoas));
-        }
 
         NomeCliente = nomeCliente;
-        DataReserva = dataReserva;
+        DataReserva = dataReservaUtc;
         NumeroPessoas = numeroPessoas;
     }
     
     public void Apagar()
     {
-        DeletedAt = DateTime.UtcNow;
+        var agoraNoBrasil = GetBrazilTimeNow();
+        DeletedAt = agoraNoBrasil;
     }
 }
