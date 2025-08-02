@@ -28,9 +28,27 @@ public class ConfirmarReservaCommandHandler
         }
 
         reserva.Confirmar();
+
         await _reservaRepository.UpdateAsync(reserva);
+
+        var eventoConfirmacao = new ReservaConfirmadaEvent(reserva.Id);
+        await _messagePublisher.PublishAsync(eventoConfirmacao);
+
+        await PublicarLembreteAgendado(reserva);
+    }
+    
+    private async Task PublicarLembreteAgendado(Domain.Entities.Reserva reserva)
+    {
+        var dataLembrete = reserva.DataReserva.AddDays(-1);
+        if (dataLembrete <= DateTime.UtcNow)
+        {
+            return;
+        }
+
+        var ttl = (int)(dataLembrete - DateTime.UtcNow).TotalMilliseconds;
         
-        var evento = new ReservaConfirmadaEvent(reserva.Id);
-        await _messagePublisher.PublishAsync(evento);
+        var eventoLembrete = new LembreteReservaEvent(reserva.Id, reserva.NomeCliente);
+
+        await _messagePublisher.PublishWithDelayAsync(eventoLembrete, ttl);
     }
 }

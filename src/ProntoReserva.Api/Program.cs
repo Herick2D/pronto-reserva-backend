@@ -10,6 +10,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<ReservasConfirmadasConsumer>();
+builder.Services.AddHostedService<LembretesConsumer>();
 
 var app = builder.Build();
 
