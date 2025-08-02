@@ -10,6 +10,7 @@ public class Reserva : Entity
     public int NumeroPessoas { get; private set; }
     public StatusReserva Status { get; private set; }
     public string? Observacoes { get; private set; }
+    public DateTime? DeletedAt { get; private set; }
     
     private Reserva(Guid id, string nomeCliente, DateTime dataReserva, int numeroPessoas) : base(id)
     {
@@ -85,5 +86,10 @@ public class Reserva : Entity
         NomeCliente = nomeCliente;
         DataReserva = dataReserva;
         NumeroPessoas = numeroPessoas;
+    }
+    
+    public void Apagar()
+    {
+        DeletedAt = DateTime.UtcNow;
     }
 }

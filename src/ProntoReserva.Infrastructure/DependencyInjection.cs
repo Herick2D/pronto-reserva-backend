@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ProntoReserva.Application.Features.Reservas.Commands.CreateReserva;
+using ProntoReserva.Application.Features.Reservas.Commands.DeleteReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.UpdateReserva;
 using ProntoReserva.Application.Features.Reservas.Queries.GetAllReservas;
 using ProntoReserva.Application.Features.Reservas.Queries.GetReservaById;
@@ -24,6 +25,7 @@ public static class DependencyInjection
 
         services.AddScoped<CreateReservaCommandHandler>();
         services.AddScoped<UpdateReservaCommandHandler>();
+        services.AddScoped<DeleteReservaCommandHandler>();
         
         services.AddScoped<GetReservaByIdQueryHandler>();
         services.AddScoped<GetAllReservasQueryHandler>();
