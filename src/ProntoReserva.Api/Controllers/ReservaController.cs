@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ProntoReserva.Application.Features.Reservas.Commands.CancelarReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.ConfirmarReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.CreateReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.DeleteReserva;
@@ -16,6 +17,7 @@ public class ReservasController : ControllerBase
     private readonly UpdateReservaCommandHandler _updateReservaCommandHandler;
     private readonly DeleteReservaCommandHandler _deleteReservaCommandHandler;
     private readonly ConfirmarReservaCommandHandler _confirmarReservaCommandHandler;
+    private readonly CancelarReservaCommandHandler _cancelarReservaCommandHandler;
     private readonly GetReservaByIdQueryHandler _getReservaByIdQueryHandler;
     private readonly GetAllReservasQueryHandler _getAllReservasQueryHandler;
 
@@ -24,6 +26,7 @@ public class ReservasController : ControllerBase
         UpdateReservaCommandHandler updateReservaCommandHandler,
         DeleteReservaCommandHandler deleteReservaCommandHandler,
         ConfirmarReservaCommandHandler confirmarReservaCommandHandler,
+        CancelarReservaCommandHandler cancelarReservaCommandHandler,
         GetReservaByIdQueryHandler getReservaByIdQueryHandler,
         GetAllReservasQueryHandler getAllReservasQueryHandler)
     {
@@ -31,6 +34,7 @@ public class ReservasController : ControllerBase
         _updateReservaCommandHandler = updateReservaCommandHandler;
         _deleteReservaCommandHandler = deleteReservaCommandHandler;
         _confirmarReservaCommandHandler = confirmarReservaCommandHandler;
+        _cancelarReservaCommandHandler = cancelarReservaCommandHandler;
         _getReservaByIdQueryHandler = getReservaByIdQueryHandler;
         _getAllReservasQueryHandler = getAllReservasQueryHandler;
     }
@@ -123,6 +127,29 @@ public class ReservasController : ControllerBase
         {
             var command = new ConfirmarReservaCommand(id);
             await _confirmarReservaCommandHandler.Handle(command);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Ocorreu um erro inesperado.", details = ex.Message });
+        }
+    }
+    
+    [HttpPost("{id}/cancelar")]
+    public async Task<IActionResult> CancelarReserva(Guid id)
+    {
+        try
+        {
+            var command = new CancelarReservaCommand(id);
+            await _cancelarReservaCommandHandler.Handle(command);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
