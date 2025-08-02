@@ -63,4 +63,27 @@ public class Reserva : Entity
     {
         Observacoes = observacoes;
     }
+    
+    //TODO: transformar as validações em uma função para evitar boilerplate
+    public void Atualizar(string nomeCliente, DateTime dataReserva, int numeroPessoas)
+    {
+        if (string.IsNullOrWhiteSpace(nomeCliente))
+        {
+            throw new ArgumentException("O nome do cliente não pode ser vazio.", nameof(nomeCliente));
+        }
+
+        if (dataReserva < DateTime.UtcNow)
+        {
+            throw new ArgumentException("A data da reserva não pode ser no passado.", nameof(dataReserva));
+        }
+
+        if (numeroPessoas <= 0)
+        {
+            throw new ArgumentException("O número de pessoas deve ser maior que zero.", nameof(numeroPessoas));
+        }
+
+        NomeCliente = nomeCliente;
+        DataReserva = dataReserva;
+        NumeroPessoas = numeroPessoas;
+    }
 }
