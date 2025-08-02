@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProntoReserva.Infrastructure;
 using ProntoReserva.Infrastructure.Persistence;
+using ProntoReserva.Infrastructure.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHostedService<ReservasConfirmadasConsumer>();
 
 var app = builder.Build();
 
