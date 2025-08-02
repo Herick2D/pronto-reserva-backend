@@ -11,6 +11,8 @@ using ProntoReserva.Application.Features.Reservas.Queries.GetReservaById;
 using ProntoReserva.Domain.Repositories;
 using ProntoReserva.Infrastructure.Persistence;
 using ProntoReserva.Infrastructure.Repositories;
+using ProntoReserva.Application.Abstractions.Messaging;
+using ProntoReserva.Infrastructure.Messaging;
 
 namespace ProntoReserva.Infrastructure;
 
@@ -33,6 +35,8 @@ public static class DependencyInjection
         
         services.AddScoped<GetReservaByIdQueryHandler>();
         services.AddScoped<GetAllReservasQueryHandler>();
+        
+        services.AddSingleton<IMessagePublisher, RabbitMQMessagePublisher>();
 
         return services;
     }
