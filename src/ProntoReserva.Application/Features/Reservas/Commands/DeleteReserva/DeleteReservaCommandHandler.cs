@@ -18,7 +18,8 @@ public class DeleteReservaCommandHandler
         {
             throw new KeyNotFoundException($"Reserva com o ID {command.Id} não encontrada.");
         }
-        
-        await _reservaRepository.DeleteAsync(command.Id);
+
+        reserva.Apagar();
+        await _reservaRepository.UpdateAsync(reserva);
     }
 }

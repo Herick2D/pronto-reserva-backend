@@ -16,7 +16,7 @@ public class DeleteReservaCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_QuandoReservaExiste_DeveChamarDeleteAsyncNoRepositorio()
+    public async Task Handle_QuandoReservaExiste_DeveChamarUpdateAsyncComReservaApagada()
     {
         var reservaId = Guid.NewGuid();
         var reservaExistente = Reserva.Criar("Cliente Para Apagar", DateTime.UtcNow.AddDays(1), 1);
@@ -31,7 +31,7 @@ public class DeleteReservaCommandHandlerTests
         await handler.Handle(command);
 
         _mockReservaRepository.Verify(
-            repo => repo.DeleteAsync(reservaId), 
+            repo => repo.UpdateAsync(It.Is<Reserva>(r => r.DeletedAt != null)), 
             Times.Once
         );
     }

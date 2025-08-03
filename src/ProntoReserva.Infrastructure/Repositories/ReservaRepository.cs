@@ -53,8 +53,8 @@ public class ReservaRepository : IReservaRepository
     public async Task AddAsync(Reserva reserva)
     {
         const string sql = @"
-            INSERT INTO Reservas (Id, NomeCliente, DataReserva, NumeroPessoas, Status, Observacoes)
-            VALUES (@Id, @NomeCliente, @DataReserva, @NumeroPessoas, @Status, @Observacoes)";
+            INSERT INTO Reservas (Id, NomeCliente, DataReserva, NumeroPessoas, Status, Observacoes, DeletedAt)
+            VALUES (@Id, @NomeCliente, @DataReserva, @NumeroPessoas, @Status, @Observacoes, @DeletedAt)";
         using var connection = CreateConnection();
         await connection.ExecuteAsync(sql, reserva);
     }
@@ -67,16 +67,10 @@ public class ReservaRepository : IReservaRepository
                 DataReserva = @DataReserva,
                 NumeroPessoas = @NumeroPessoas,
                 Status = @Status,
-                Observacoes = @Observacoes
-            WHERE Id = @Id AND DeletedAt IS NULL";
+                Observacoes = @Observacoes,
+                DeletedAt = @DeletedAt 
+            WHERE Id = @Id";
         using var connection = CreateConnection();
         await connection.ExecuteAsync(sql, reserva);
-    }
-
-    public async Task DeleteAsync(Guid id)
-    {
-        const string sql = "UPDATE Reservas SET DeletedAt = GETUTCDATE() WHERE Id = @Id";
-        using var connection = CreateConnection();
-        await connection.ExecuteAsync(sql, new { Id = id });
     }
 }

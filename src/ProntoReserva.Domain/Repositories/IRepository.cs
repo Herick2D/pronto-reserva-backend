@@ -11,6 +11,4 @@ public interface IReservaRepository
     Task AddAsync(Reserva reserva);
 
     Task UpdateAsync(Reserva reserva);
-
-    Task DeleteAsync(Guid id);
 }
