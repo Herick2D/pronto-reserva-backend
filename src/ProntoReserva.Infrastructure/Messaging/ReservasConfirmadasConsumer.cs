@@ -3,11 +3,8 @@ using Microsoft.Extensions.Logging;
 using ProntoReserva.Application.Events;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ProntoReserva.Infrastructure.Messaging;
 
@@ -41,12 +38,18 @@ public class ReservasConfirmadasConsumer : BackgroundService
                 var message = Encoding.UTF8.GetString(body);
                 var evento = JsonSerializer.Deserialize<ReservaConfirmadaEvent>(message);
 
-                // A partir daqui, processamos o evento.
-                // Para este caso, envio de uma notificação de confirmação para o cliente.
+                if (evento is null)
+                {
+                    _logger.LogError("--> [CONSUMIDOR] Não foi possível desserializar a mensagem recebida.");
+                    _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
+                    return;
+                }
+
+                // simula o envio de uma notificação de confirmação para o cliente.
                 _logger.LogInformation("--> [CONSUMIDOR] Evento de confirmação recebido para a Reserva ID: {ReservaId}", evento.ReservaId);
                 _logger.LogInformation("--> Simulando envio de e-mail...");
 
-                // Simula a latência de um serviço externo (ex: serviço de e-mail).
+                // Simula a latência de um serviço externo (ex: serviço de e-mail/SMS).
                 Thread.Sleep(3000);
 
                 _logger.LogInformation("--> Notificação para a Reserva ID: {ReservaId} processada com sucesso.", evento.ReservaId);

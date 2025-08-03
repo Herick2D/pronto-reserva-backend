@@ -27,7 +27,7 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(connectionString));
+            options.UseNpgsql(connectionString));
 
         services.AddSingleton<IReservaRepository>(sp => new ReservaRepository(connectionString!));
         services.AddScoped<IUserRepository>(sp => new UserRepository(connectionString!));

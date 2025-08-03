@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using ProntoReserva.Application.Events;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+
 using System.Text;
 using System.Text.Json;
 
@@ -37,6 +38,13 @@ public class LembretesConsumer : BackgroundService
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
                 var evento = JsonSerializer.Deserialize<LembreteReservaEvent>(message);
+
+                if (evento is null)
+                {
+                    _logger.LogError("--> [LEMBRETES] Não foi possível desserializar a mensagem recebida.");
+                    _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
+                    return;
+                }
 
                 _logger.LogWarning("--> [LEMBRETES] Lembrete agendado recebido para o Cliente: '{NomeCliente}', Reserva ID: {ReservaId}", evento.NomeCliente, evento.ReservaId);
                 _logger.LogInformation("--> Simulando envio de SMS/Push de lembrete...");
