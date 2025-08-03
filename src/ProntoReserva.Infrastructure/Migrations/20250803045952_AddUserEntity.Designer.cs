@@ -12,7 +12,7 @@ using ProntoReserva.Infrastructure.Persistence;
 namespace ProntoReserva.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250803040356_AddUserEntity")]
+    [Migration("20250803045952_AddUserEntity")]
     partial class AddUserEntity
     {
         /// <inheritdoc />
@@ -53,6 +53,25 @@ namespace ProntoReserva.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Reservas");
+                });
+
+            modelBuilder.Entity("ProntoReserva.Domain.Entities.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Users");
                 });
 #pragma warning restore 612, 618
         }

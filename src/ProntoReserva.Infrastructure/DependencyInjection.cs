@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ProntoReserva.Application.Abstractions.Authentication;
 using ProntoReserva.Application.Features.Reservas.Commands.CancelarReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.ConfirmarReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.CreateReserva;
@@ -12,6 +13,9 @@ using ProntoReserva.Domain.Repositories;
 using ProntoReserva.Infrastructure.Persistence;
 using ProntoReserva.Infrastructure.Repositories;
 using ProntoReserva.Application.Abstractions.Messaging;
+using ProntoReserva.Application.Features.Users.Commands.Login;
+using ProntoReserva.Application.Features.Users.Commands.Register;
+using ProntoReserva.Infrastructure.Authentication;
 using ProntoReserva.Infrastructure.Messaging;
 
 namespace ProntoReserva.Infrastructure;
@@ -26,12 +30,17 @@ public static class DependencyInjection
             options.UseSqlServer(connectionString));
 
         services.AddSingleton<IReservaRepository>(sp => new ReservaRepository(connectionString!));
+        services.AddScoped<IUserRepository>(sp => new UserRepository(connectionString!));
 
+        services.AddScoped<ITokenService, JwtTokenService>();
+        
         services.AddScoped<CreateReservaCommandHandler>();
         services.AddScoped<UpdateReservaCommandHandler>();
         services.AddScoped<DeleteReservaCommandHandler>();
         services.AddScoped<ConfirmarReservaCommandHandler>();
         services.AddScoped<CancelarReservaCommandHandler>();
+        services.AddScoped<RegisterUserCommandHandler>();
+        services.AddScoped<LoginUserCommandHandler>(); 
         
         services.AddScoped<GetReservaByIdQueryHandler>();
         services.AddScoped<GetAllReservasQueryHandler>();

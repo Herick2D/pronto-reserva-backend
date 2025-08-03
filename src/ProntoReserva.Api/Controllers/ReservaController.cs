@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ProntoReserva.Application.Features.Reservas.Commands.CancelarReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.ConfirmarReserva;
 using ProntoReserva.Application.Features.Reservas.Commands.CreateReserva;
@@ -11,6 +12,7 @@ namespace ProntoReserva.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ReservasController : ControllerBase
 {
     private readonly CreateReservaCommandHandler _createReservaCommandHandler;
