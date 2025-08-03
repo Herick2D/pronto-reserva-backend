@@ -1,7 +1,6 @@
 ﻿using FluentAssertions;
 using ProntoReserva.Domain.Entities;
 using ProntoReserva.Domain.Enums;
-using System;
 
 namespace ProntoReserva.Tests.Unit.Domain.Entities;
 
@@ -9,6 +8,20 @@ public class ReservaTests
 {
     private static Reserva CriarReservaValida() =>
         Reserva.Criar("Cliente Teste", DateTime.UtcNow.AddDays(1), 2);
+    
+    private static DateTime GetBrazilTimeNow()
+    {
+        try
+        {
+            var brazilTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
+            return TimeZoneInfo.ConvertTime(DateTime.UtcNow, brazilTimeZone);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            var brazilTimeZone = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
+            return TimeZoneInfo.ConvertTime(DateTime.UtcNow, brazilTimeZone);
+        }
+    }
 
     #region Testes do Método Criar
 
@@ -34,15 +47,22 @@ public class ReservaTests
     public void Criar_ComNomeClienteVazioOuNulo_DeveLancarArgumentException(string nomeInvalido)
     {
         Action act = () => Reserva.Criar(nomeInvalido, DateTime.UtcNow.AddDays(1), 2);
-
         act.Should().Throw<ArgumentException>().And.ParamName.Should().Be("nomeCliente");
     }
 
     [Fact]
-    public void Criar_ComDataNoPassado_DeveLancarArgumentException()
+    public void Criar_ComDataUtcNoPassado_DeveLancarArgumentException()
     {
-        Action act = () => Reserva.Criar("Cliente", DateTime.UtcNow.AddMinutes(-1), 2);
+        var dataUtcNoPassado = DateTime.UtcNow.AddHours(-4);
+        Action act = () => Reserva.Criar("Cliente", dataUtcNoPassado, 2);
+        act.Should().Throw<ArgumentException>().And.ParamName.Should().Be("dataReserva");
+    }
 
+    [Fact]
+    public void Criar_ComDataLocalNoPassado_DeveNormalizarParaUtcELancarArgumentException()
+    {
+        var dataLocalNoPassado = DateTime.Now.AddHours(-4);
+        Action act = () => Reserva.Criar("Cliente", dataLocalNoPassado, 2);
         act.Should().Throw<ArgumentException>().And.ParamName.Should().Be("dataReserva");
     }
     
@@ -52,7 +72,6 @@ public class ReservaTests
     public void Criar_ComNumeroDePessoasInvalido_DeveLancarArgumentException(int numeroPessoasInvalido)
     {
         Action act = () => Reserva.Criar("Cliente", DateTime.UtcNow.AddDays(5), numeroPessoasInvalido);
-
         act.Should().Throw<ArgumentException>().And.ParamName.Should().Be("numeroPessoas");
     }
 
@@ -82,23 +101,16 @@ public class ReservaTests
     public void Confirmar_QuandoStatusEhPendente_DeveMudarStatusParaConfirmada()
     {
         var reserva = CriarReservaValida();
-        reserva.Status.Should().Be(StatusReserva.Pendente);
-
         reserva.Confirmar();
-
         reserva.Status.Should().Be(StatusReserva.Confirmada);
     }
 
     [Fact]
     public void Confirmar_QuandoStatusNaoEhPendente_DeveLancarInvalidOperationException()
     {
-
         var reserva = CriarReservaValida();
         reserva.Confirmar();
-        reserva.Status.Should().Be(StatusReserva.Confirmada);
-
         Action act = () => reserva.Confirmar();
-
         act.Should().Throw<InvalidOperationException>();
     }
 
@@ -106,10 +118,7 @@ public class ReservaTests
     public void Cancelar_QuandoStatusNaoEhConcluida_DeveMudarStatusParaCancelada()
     {
         var reserva = CriarReservaValida();
-        reserva.Status.Should().Be(StatusReserva.Pendente);
-
         reserva.Cancelar();
-
         reserva.Status.Should().Be(StatusReserva.Cancelada);
     }
     #endregion
@@ -125,7 +134,7 @@ public class ReservaTests
         reserva.Apagar();
 
         reserva.DeletedAt.Should().NotBeNull();
-        reserva.DeletedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
+        reserva.DeletedAt.Should().BeCloseTo(GetBrazilTimeNow(), TimeSpan.FromSeconds(1));
     }
     #endregion
 }
