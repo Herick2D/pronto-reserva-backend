@@ -6,8 +6,10 @@ namespace ProntoReserva.Tests.Unit.Domain.Entities;
 
 public class ReservaTests
 {
+    private static readonly Guid _testUserId = Guid.NewGuid();
+
     private static Reserva CriarReservaValida() =>
-        Reserva.Criar("Cliente Teste", DateTime.UtcNow.AddDays(1), 2);
+        Reserva.Criar("Cliente Teste", DateTime.UtcNow.AddDays(1), 2, _testUserId);
     
     private static DateTime GetBrazilTimeNow()
     {
@@ -31,13 +33,14 @@ public class ReservaTests
         var nomeCliente = "Herick Moreira";
         var dataReserva = DateTime.UtcNow.AddDays(1);
         var numeroPessoas = 4;
-        
-        var reserva = Reserva.Criar(nomeCliente, dataReserva, numeroPessoas);
+
+        var reserva = Reserva.Criar(nomeCliente, dataReserva, numeroPessoas, _testUserId);
         
         reserva.Should().NotBeNull();
         reserva.NomeCliente.Should().Be(nomeCliente);
         reserva.Status.Should().Be(StatusReserva.Pendente);
         reserva.DeletedAt.Should().BeNull();
+        reserva.UserId.Should().Be(_testUserId);
     }
 
     [Theory]
@@ -46,7 +49,7 @@ public class ReservaTests
     [InlineData(null)]
     public void Criar_ComNomeClienteVazioOuNulo_DeveLancarArgumentException(string nomeInvalido)
     {
-        Action act = () => Reserva.Criar(nomeInvalido, DateTime.UtcNow.AddDays(1), 2);
+        Action act = () => Reserva.Criar(nomeInvalido, DateTime.UtcNow.AddDays(1), 2, _testUserId);
         act.Should().Throw<ArgumentException>().And.ParamName.Should().Be("nomeCliente");
     }
 
@@ -54,7 +57,7 @@ public class ReservaTests
     public void Criar_ComDataUtcNoPassado_DeveLancarArgumentException()
     {
         var dataUtcNoPassado = DateTime.UtcNow.AddHours(-4);
-        Action act = () => Reserva.Criar("Cliente", dataUtcNoPassado, 2);
+        Action act = () => Reserva.Criar("Cliente", dataUtcNoPassado, 2, _testUserId);
         act.Should().Throw<ArgumentException>().And.ParamName.Should().Be("dataReserva");
     }
 
@@ -62,7 +65,7 @@ public class ReservaTests
     public void Criar_ComDataLocalNoPassado_DeveNormalizarParaUtcELancarArgumentException()
     {
         var dataLocalNoPassado = DateTime.Now.AddHours(-4);
-        Action act = () => Reserva.Criar("Cliente", dataLocalNoPassado, 2);
+        Action act = () => Reserva.Criar("Cliente", dataLocalNoPassado, 2, _testUserId);
         act.Should().Throw<ArgumentException>().And.ParamName.Should().Be("dataReserva");
     }
     
@@ -71,7 +74,7 @@ public class ReservaTests
     [InlineData(-1)]
     public void Criar_ComNumeroDePessoasInvalido_DeveLancarArgumentException(int numeroPessoasInvalido)
     {
-        Action act = () => Reserva.Criar("Cliente", DateTime.UtcNow.AddDays(5), numeroPessoasInvalido);
+        Action act = () => Reserva.Criar("Cliente", DateTime.UtcNow.AddDays(5), numeroPessoasInvalido, _testUserId);
         act.Should().Throw<ArgumentException>().And.ParamName.Should().Be("numeroPessoas");
     }
 

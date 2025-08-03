@@ -1,32 +1,41 @@
 ﻿using FluentAssertions;
 using Moq;
+using ProntoReserva.Application.Abstractions.Authentication;
 using ProntoReserva.Application.Features.Reservas.Commands.CancelarReserva;
 using ProntoReserva.Domain.Entities;
 using ProntoReserva.Domain.Enums;
 using ProntoReserva.Domain.Repositories;
+
 
 namespace ProntoReserva.Tests.Unit.Application.Features.Reservas.Commands.CancelarReserva;
 
 public class CancelarReservaCommandHandlerTests
 {
     private readonly Mock<IReservaRepository> _mockReservaRepository;
+    private readonly Mock<IUserContext> _mockUserContext;
+    private readonly Guid _userId = Guid.NewGuid();
 
     public CancelarReservaCommandHandlerTests()
     {
         _mockReservaRepository = new Mock<IReservaRepository>();
+        _mockUserContext = new Mock<IUserContext>();
+
+        _mockUserContext.Setup(x => x.GetUserId()).Returns(_userId);
     }
 
     [Fact]
     public async Task Handle_QuandoReservaExisteECancelavel_DeveCancelarEChamarUpdateAsync()
     {
         var reservaId = Guid.NewGuid();
-        var reservaCancelavel = Reserva.Criar("Cliente Teste", DateTime.UtcNow.AddDays(1), 2);
-        
+        var reservaCancelavel = Reserva.Criar("Cliente Teste", DateTime.UtcNow.AddDays(1), 2, _userId);
+
         _mockReservaRepository
-            .Setup(repo => repo.GetByIdAsync(reservaId))
+            .Setup(repo => repo.GetByIdAsync(reservaId, _userId))
             .ReturnsAsync(reservaCancelavel);
 
-        var handler = new CancelarReservaCommandHandler(_mockReservaRepository.Object);
+        var handler = new CancelarReservaCommandHandler(
+            _mockReservaRepository.Object,
+            _mockUserContext.Object);
         var command = new CancelarReservaCommand(reservaId);
 
         await handler.Handle(command);
@@ -41,10 +50,12 @@ public class CancelarReservaCommandHandlerTests
         var idInexistente = Guid.NewGuid();
         
         _mockReservaRepository
-            .Setup(repo => repo.GetByIdAsync(idInexistente))
+            .Setup(repo => repo.GetByIdAsync(idInexistente, _userId))
             .ReturnsAsync((Reserva?)null);
 
-        var handler = new CancelarReservaCommandHandler(_mockReservaRepository.Object);
+        var handler = new CancelarReservaCommandHandler(
+            _mockReservaRepository.Object,
+            _mockUserContext.Object);
         var command = new CancelarReservaCommand(idInexistente);
 
         Func<Task> act = async () => await handler.Handle(command);

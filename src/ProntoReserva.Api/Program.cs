@@ -9,6 +9,20 @@ using ProntoReserva.Infrastructure.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var corsPolicyName = "AllowAll";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: corsPolicyName,
+                      policy =>
+                      {
+                          policy.AllowAnyOrigin()
+                                .AllowAnyHeader()
+                                .AllowAnyMethod();
+                      });
+});
+
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -89,6 +103,8 @@ if (app.Environment.IsDevelopment())
         dbContext.Database.Migrate();
     }
 }
+
+app.UseCors(corsPolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -11,13 +11,15 @@ public class Reserva : Entity
     public StatusReserva Status { get; private set; }
     public string? Observacoes { get; private set; }
     public DateTime? DeletedAt { get; private set; }
+    public Guid UserId { get; private set; }
     
-    private Reserva(Guid id, string nomeCliente, DateTime dataReserva, int numeroPessoas) : base(id)
+    private Reserva(Guid id, string nomeCliente, DateTime dataReserva, int numeroPessoas, Guid userId) : base(id)
     {
         NomeCliente = nomeCliente;
         DataReserva = dataReserva;
         NumeroPessoas = numeroPessoas;
         Status = StatusReserva.Pendente;
+        UserId = userId;
     }
     
     private Reserva() { }
@@ -38,7 +40,7 @@ public class Reserva : Entity
         };
     }
 
-    public static Reserva Criar(string nomeCliente, DateTime dataReserva, int numeroPessoas)
+    public static Reserva Criar(string nomeCliente, DateTime dataReserva, int numeroPessoas, Guid userId)
     {
         var dataReservaUtc = NormalizeToUtc(dataReserva);
         var agoraNoBrasil = GetBrazilTimeNow();
@@ -52,7 +54,7 @@ public class Reserva : Entity
         if (numeroPessoas <= 0)
             throw new ArgumentException("O número de pessoas deve ser maior que zero.", nameof(numeroPessoas));
 
-        return new Reserva(Guid.NewGuid(), nomeCliente, dataReservaUtc, numeroPessoas);
+        return new Reserva(Guid.NewGuid(), nomeCliente, dataReservaUtc, numeroPessoas, userId);
     }
     
     public void Confirmar()

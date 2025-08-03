@@ -4,9 +4,9 @@ namespace ProntoReserva.Domain.Repositories;
 
 public interface IReservaRepository
 {
-    Task<Reserva?> GetByIdAsync(Guid id);
+    Task<Reserva?> GetByIdAsync(Guid id, Guid userId);
 
-    Task<(ICollection<Reserva> Reservas, int TotalCount)> GetAllAsync(int pageNumber, int pageSize);
+    Task<(ICollection<Reserva> Reservas, int TotalCount)> GetAllAsync(int pageNumber, int pageSize, Guid userId);
     
     Task AddAsync(Reserva reserva);
 

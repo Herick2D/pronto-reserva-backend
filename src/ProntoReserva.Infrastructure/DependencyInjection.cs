@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository>(sp => new UserRepository(connectionString!));
 
         services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddScoped<IUserContext, UserContext>();
         
         services.AddScoped<CreateReservaCommandHandler>();
         services.AddScoped<UpdateReservaCommandHandler>();

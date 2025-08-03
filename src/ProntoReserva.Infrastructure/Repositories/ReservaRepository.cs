@@ -17,27 +17,32 @@ public class ReservaRepository : IReservaRepository
 
     private IDbConnection CreateConnection() => new NpgsqlConnection(_connectionString);
 
-    public async Task<Reserva?> GetByIdAsync(Guid id)
+    public async Task<Reserva?> GetByIdAsync(Guid id, Guid userId)
     {
-        const string sql = "SELECT * FROM \"Reservas\" WHERE \"Id\" = @Id AND \"DeletedAt\" IS NULL";
+        const string sql = "SELECT * FROM \"Reservas\" WHERE \"Id\" = @Id AND \"UserId\" = @UserId AND \"DeletedAt\" IS NULL";
         using var connection = CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<Reserva>(sql, new { Id = id });
+        return await connection.QuerySingleOrDefaultAsync<Reserva>(sql, new { Id = id, UserId = userId });
     }
 
-    public async Task<(ICollection<Reserva> Reservas, int TotalCount)> GetAllAsync(int pageNumber, int pageSize)
+    public async Task<(ICollection<Reserva> Reservas, int TotalCount)> GetAllAsync(int pageNumber, int pageSize, Guid userId)
     {
         const string sql = @"
-            SELECT COUNT(*) FROM ""Reservas"" WHERE ""DeletedAt"" IS NULL;
+            SELECT COUNT(*) FROM ""Reservas"" WHERE ""UserId"" = @UserId AND ""DeletedAt"" IS NULL;
 
             SELECT * FROM ""Reservas""
-            WHERE ""DeletedAt"" IS NULL
+            WHERE ""UserId"" = @UserId AND ""DeletedAt"" IS NULL
             ORDER BY ""DataReserva"" DESC
             OFFSET @Offset ROWS
             FETCH NEXT @PageSize ROWS ONLY;
         ";
 
         using var connection = CreateConnection();
-        using var multi = await connection.QueryMultipleAsync(sql, new { Offset = (pageNumber - 1) * pageSize, PageSize = pageSize });
+        using var multi = await connection.QueryMultipleAsync(sql, new 
+        { 
+            UserId = userId,
+            Offset = (pageNumber - 1) * pageSize, 
+            PageSize = pageSize 
+        });
         var totalCount = await multi.ReadSingleAsync<int>();
         var reservas = (await multi.ReadAsync<Reserva>()).ToList();
         return (reservas, totalCount);
@@ -46,8 +51,8 @@ public class ReservaRepository : IReservaRepository
     public async Task AddAsync(Reserva reserva)
     {
         const string sql = @"
-            INSERT INTO ""Reservas"" (""Id"", ""NomeCliente"", ""DataReserva"", ""NumeroPessoas"", ""Status"", ""Observacoes"", ""DeletedAt"")
-            VALUES (@Id, @NomeCliente, @DataReserva, @NumeroPessoas, @Status, @Observacoes, @DeletedAt)";
+            INSERT INTO ""Reservas"" (""Id"", ""NomeCliente"", ""DataReserva"", ""NumeroPessoas"", ""Status"", ""Observacoes"", ""DeletedAt"", ""UserId"")
+            VALUES (@Id, @NomeCliente, @DataReserva, @NumeroPessoas, @Status, @Observacoes, @DeletedAt, @UserId)";
         using var connection = CreateConnection();
         await connection.ExecuteAsync(sql, reserva);
     }
@@ -62,7 +67,7 @@ public class ReservaRepository : IReservaRepository
                 ""Status"" = @Status,
                 ""Observacoes"" = @Observacoes,
                 ""DeletedAt"" = @DeletedAt 
-            WHERE ""Id"" = @Id";
+            WHERE ""Id"" = @Id AND ""UserId"" = @UserId";
         using var connection = CreateConnection();
         await connection.ExecuteAsync(sql, reserva);
     }

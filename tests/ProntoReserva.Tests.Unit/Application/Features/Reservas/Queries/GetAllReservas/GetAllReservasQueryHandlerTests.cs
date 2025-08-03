@@ -1,71 +1,47 @@
-﻿using FluentAssertions;
-using Moq;
-using ProntoReserva.Application.Features.Reservas.Queries.GetAllReservas;
-using ProntoReserva.Domain.Entities;
+﻿using ProntoReserva.Application.Abstractions.Authentication;
+using ProntoReserva.Application.Features.Reservas.Common;
 using ProntoReserva.Domain.Repositories;
 
-namespace ProntoReserva.Tests.Unit.Application.Features.Reservas.Queries.GetAllReservas;
 
-public class GetAllReservasQueryHandlerTests
+namespace ProntoReserva.Application.Features.Reservas.Queries.GetAllReservas;
+
+public class GetAllReservasQueryHandler
 {
-    private readonly Mock<IReservaRepository> _mockReservaRepository;
+    private readonly IReservaRepository _reservaRepository;
+    private readonly IUserContext _userContext;
 
-    public GetAllReservasQueryHandlerTests()
+    public GetAllReservasQueryHandler(
+        IReservaRepository reservaRepository, 
+        IUserContext userContext)
     {
-        _mockReservaRepository = new Mock<IReservaRepository>();
+        _reservaRepository = reservaRepository;
+        _userContext = userContext;
     }
-    
-    private List<Reserva> GerarListaDeReservas(int quantidade)
+
+    public async Task<PaginatedResponse<ReservaResponse>> Handle(GetAllReservasQuery query)
     {
-        var lista = new List<Reserva>();
-        for (int i = 0; i < quantidade; i++)
+        var userId = _userContext.GetUserId();
+        if (userId is null)
         {
-            lista.Add(Reserva.Criar($"Cliente {i + 1}", DateTime.UtcNow.AddDays(i + 1), 2));
+            throw new UnauthorizedAccessException("Utilizador não autenticado.");
         }
-        return lista;
-    }
 
-    [Fact]
-    public async Task Handle_QuandoExistemReservas_DeveRetornarRespostaPaginadaCorretamente()
-    {
-        var query = new GetAllReservasQuery(PageNumber: 1, PageSize: 5);
-        var listaReservasFalsas = GerarListaDeReservas(5);
-        var contagemTotalFalsa = 20;
+        var (reservas, totalCount) = await _reservaRepository.GetAllAsync(query.PageNumber, query.PageSize, userId.Value);
 
-        _mockReservaRepository
-            .Setup(repo => repo.GetAllAsync(query.PageNumber, query.PageSize))
-            .ReturnsAsync((listaReservasFalsas, contagemTotalFalsa));
-
-        var handler = new GetAllReservasQueryHandler(_mockReservaRepository.Object);
-        var result = await handler.Handle(query);
-
-        result.Should().NotBeNull();
-        result.Items.Should().HaveCount(5);
-        result.TotalCount.Should().Be(contagemTotalFalsa);
-        result.PageNumber.Should().Be(query.PageNumber);
-        result.PageSize.Should().Be(query.PageSize);
-        result.TotalPages.Should().Be(4);
-        result.HasNextPage.Should().BeTrue();
-        result.HasPreviousPage.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task Handle_QuandoNaoExistemReservas_DeveRetornarRespostaPaginadaVazia()
-    {
-        var query = new GetAllReservasQuery();
-
-        _mockReservaRepository
-            .Setup(repo => repo.GetAllAsync(It.IsAny<int>(), It.IsAny<int>()))
-            .ReturnsAsync((new List<Reserva>(), 0));
-
-        var handler = new GetAllReservasQueryHandler(_mockReservaRepository.Object);
-
-        var result = await handler.Handle(query);
-
-        result.Should().NotBeNull();
-        result.Items.Should().BeEmpty();
-        result.TotalCount.Should().Be(0);
-        result.TotalPages.Should().Be(0);
-        result.HasNextPage.Should().BeFalse();
+        var reservaResponses = reservas.Select(reserva => new ReservaResponse
+        {
+            Id = reserva.Id,
+            NomeCliente = reserva.NomeCliente,
+            DataReserva = reserva.DataReserva,
+            NumeroPessoas = reserva.NumeroPessoas,
+            Status = reserva.Status.ToString(),
+            Observacoes = reserva.Observacoes
+        }).ToList();
+        
+        return new PaginatedResponse<ReservaResponse>(
+            reservaResponses, 
+            totalCount, 
+            query.PageNumber, 
+            query.PageSize);
     }
 }
