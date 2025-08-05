@@ -1,4 +1,6 @@
-﻿using ProntoReserva.Application.Abstractions.Messaging;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using ProntoReserva.Application.Abstractions.Messaging;
 using RabbitMQ.Client;
 using System.Text;
 using System.Text.Json;
@@ -11,17 +13,37 @@ public class RabbitMQMessagePublisher : IMessagePublisher, IDisposable
     private readonly IModel _channel;
 
     private const string CONFIRMATION_QUEUE_NAME = "reservas-confirmadas-queue";
-
     private const string REMINDER_EXCHANGE = "lembretes.exchange";
     private const string REMINDER_READY_QUEUE = "lembretes-prontos-queue";
     private const string REMINDER_WAIT_QUEUE = "lembretes-espera-queue";
 
-
-    public RabbitMQMessagePublisher()
+    public RabbitMQMessagePublisher(ILogger<RabbitMQMessagePublisher> logger, IConfiguration configuration)
     {
-        //TODO tirar do hardedcode para consumir através do arquivo de configuração.
-        var factory = new ConnectionFactory { HostName = "localhost" };
-        _connection = factory.CreateConnection();
+        var factory = new ConnectionFactory
+        {
+            HostName = configuration["RabbitMq:HostName"],
+            UserName = configuration["RabbitMq:UserName"],
+            Password = configuration["RabbitMq:Password"]
+        };
+
+        var retries = 5;
+        while (retries > 0)
+        {
+            try
+            {
+                _connection = factory.CreateConnection();
+                logger.LogInformation("--> [RabbitMQ] Conexão do Publicador estabelecida com sucesso.");
+                break;
+            }
+            catch (RabbitMQ.Client.Exceptions.BrokerUnreachableException ex)
+            {
+                retries--;
+                logger.LogWarning(ex, "--> [RabbitMQ] Publicador não conseguiu conectar. Tentando novamente em 5s... ({retries} tentativas restantes)", retries);
+                Thread.Sleep(5000);
+            }
+        }
+        if (_connection is null) throw new Exception("Não foi possível conectar ao RabbitMQ após várias tentativas.");
+        
         _channel = _connection.CreateModel();
 
         _channel.QueueDeclare(
@@ -61,11 +83,9 @@ public class RabbitMQMessagePublisher : IMessagePublisher, IDisposable
     public Task PublishWithDelayAsync<T>(T evento, int ttl) where T : class
     {
         var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(evento));
-
         var properties = _channel.CreateBasicProperties();
         properties.Expiration = ttl.ToString();
         properties.Persistent = true;
-
         _channel.BasicPublish(
             exchange: REMINDER_EXCHANGE,
             routingKey: REMINDER_WAIT_QUEUE,

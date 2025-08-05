@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ProntoReserva.Application.Events;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-
 using System.Text;
 using System.Text.Json;
 
@@ -16,11 +16,34 @@ public class LembretesConsumer : BackgroundService
     private readonly IModel _channel;
     private const string QueueName = "lembretes-prontos-queue";
 
-    public LembretesConsumer(ILogger<LembretesConsumer> logger)
+    public LembretesConsumer(ILogger<LembretesConsumer> logger, IConfiguration configuration)
     {
         _logger = logger;
-        var factory = new ConnectionFactory() { HostName = "localhost" };
-        _connection = factory.CreateConnection();
+        var factory = new ConnectionFactory
+        {
+            HostName = configuration["RabbitMq:HostName"],
+            UserName = configuration["RabbitMq:UserName"],
+            Password = configuration["RabbitMq:Password"]
+        };
+
+        var retries = 5;
+        while (retries > 0)
+        {
+            try
+            {
+                _connection = factory.CreateConnection();
+                logger.LogInformation("--> [RabbitMQ] Conexão do Consumer de Lembretes estabelecida com sucesso.");
+                break;
+            }
+            catch (RabbitMQ.Client.Exceptions.BrokerUnreachableException ex)
+            {
+                retries--;
+                logger.LogWarning(ex, "--> [RabbitMQ] Consumer de Lembretes não conseguiu conectar. Tentando novamente em 5s... ({retries} tentativas restantes)", retries);
+                Thread.Sleep(5000);
+            }
+        }
+        if (_connection is null) throw new Exception("Não foi possível conectar ao RabbitMQ após várias tentativas.");
+
         _channel = _connection.CreateModel();
         _channel.QueueDeclare(queue: QueueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
     }
@@ -28,9 +51,7 @@ public class LembretesConsumer : BackgroundService
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         stoppingToken.ThrowIfCancellationRequested();
-
         var consumer = new EventingBasicConsumer(_channel);
-
         consumer.Received += (model, ea) =>
         {
             try
@@ -38,21 +59,16 @@ public class LembretesConsumer : BackgroundService
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
                 var evento = JsonSerializer.Deserialize<LembreteReservaEvent>(message);
-
                 if (evento is null)
                 {
                     _logger.LogError("--> [LEMBRETES] Não foi possível desserializar a mensagem recebida.");
                     _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
                     return;
                 }
-
                 _logger.LogWarning("--> [LEMBRETES] Lembrete agendado recebido para o Cliente: '{NomeCliente}', Reserva ID: {ReservaId}", evento.NomeCliente, evento.ReservaId);
                 _logger.LogInformation("--> Simulando envio de SMS/Push de lembrete...");
-
                 Thread.Sleep(1000);
-
                 _logger.LogInformation("--> Lembrete para a Reserva ID: {ReservaId} enviado com sucesso.", evento.ReservaId);
-
                 _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
             }
             catch (Exception ex)
@@ -60,7 +76,6 @@ public class LembretesConsumer : BackgroundService
                 _logger.LogError(ex, "--> Erro ao processar mensagem de lembrete.");
             }
         };
-
         _channel.BasicConsume(queue: QueueName, autoAck: false, consumer: consumer);
         _logger.LogInformation("--> [RabbitMQ] Consumidor de Lembretes iniciado.");
         return Task.CompletedTask;
